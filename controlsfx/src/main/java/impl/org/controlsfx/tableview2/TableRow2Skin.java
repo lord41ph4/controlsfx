@@ -351,16 +351,16 @@ public class TableRow2Skin<S> extends CellSkinBase<TableRow<S>> {
                         cell.resize(cell.getWidth(), cell.getHeight() + (tempHeight - customHeight));
                     }
                     customHeight = tempHeight;
-                    if (parentTableView != null) {
-                        ((TableView2Skin<S>) tableView.getSkin()).getFlow().layoutChildren();
-                    } else {
-                        ((TableView2Skin<S>) skin).getFlow().layoutChildren();
-                    }
+                    // removed because it makes the initial scroll very slow. The redraw is implicitly handled by skin.rowHeightMap.put()
+//                    if (parentTableView != null) {
+//                        ((TableView2Skin<S>) tableView.getSkin()).getFlow().layoutChildren();
+//                    } else {
+//                        ((TableView2Skin<S>) skin).getFlow().layoutChildren();
+//                    }
                 }
             }
 
-            height = customHeight;
-            height = snapSize(height) - snapSize(verticalPadding);
+            height = snapSize(customHeight) - snapSize(verticalPadding);
             /**
              * We need to span multiple rows, so we sum up the height of all
              * the rows. The height of the current row is ignored and the

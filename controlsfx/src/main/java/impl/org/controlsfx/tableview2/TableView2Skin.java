@@ -84,7 +84,7 @@ import static impl.org.controlsfx.tableview2.SortUtils.SortEndedEvent.SORT_ENDED
  * @param <S> The type of the objects contained within the {@link TableView2} items list.
  */
 public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, TableRow<S>, TableColumn<S,?>> {
-        
+
     /***************************************************************************
      * * STATIC FIELDS * *
      **************************************************************************/
@@ -93,7 +93,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     private static final double DEFAULT_CELL_HEIGHT;
 
     static {
-        double cell_size = 24.0;
+        double cell_size = Double.parseDouble(System.getProperty("controlsfx.minimumRowHeight", "24"));
 //        try {
 //            Class<?> clazz = javafx.scene.control.skin.CellSkinBase.class;
 //            Field f = clazz.getDeclaredField("DEFAULT_CELL_SIZE"); //$NON-NLS-1$
@@ -128,7 +128,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     protected TableView2<S> tableView;
     private final TableView2<S> parentTableView;
     protected RowHeader<S> rowHeader;
-    
+
     /**
      * The currently fixedRow. This handles an Integer's set of rows being
      * fixed. NOT Fixable but truly fixed.
@@ -141,7 +141,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
      * selection is made.
      */
     private final ObservableList<Integer> selectedRows = FXCollections.observableArrayList();
-    
+
     /**
      * A list of Integer with the current selected Columns. This is useful for
      * TableHeaderRow2 and RowHeader because they need to highlight when a
@@ -157,22 +157,22 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     /**
      * These variable try to optimize the layout of the rows in order not to layout
      * every time every row.
-     * 
+     *
      * So rowToLayout contains the rows that really needs layout(contain span or fixed).
-     * 
+     *
      * And hBarValue is an indicator for the VirtualFlow. When the Hbar is touched, this BitSet
-     * is set to false. And when a row is drawing, it flips its value in this BitSet. 
+     * is set to false. And when a row is drawing, it flips its value in this BitSet.
      * So that we know when scrolling up or down whether a row has taken into account
      * that the HBar was moved (otherwise, blank area may appear).
      */
     BitSet hBarValue;
     BitSet rowToLayout;
-    
+
     /**
-     * This is the current width used by the currently fixed column on the left. 
+     * This is the current width used by the currently fixed column on the left.
      */
     double fixedColumnWidth;
-    
+
     /**
      * When we try to select cells after a setGrid, we end up with the cell
      * selected but no visual confirmation. In order to prevent that, we need to
@@ -181,41 +181,41 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
      * visual to come.
      */
     BooleanProperty lastRowLayout = new SimpleBooleanProperty(true);
-    
+
     TableHeaderRow tableHeaderRow;
-    
+
     private boolean key = false; // Register if we last touch the keyboard
     private final EventHandler<KeyEvent> keyPressedEventHandler = e -> key = true;
     private final EventHandler<MouseEvent> mousePressedEventHandler = e -> key = false;
     private final List<Integer> oldSelectedColumns = new ArrayList<>();
     private final List<Integer> oldSelectedRows = new ArrayList<>();
-    
+
     private final VirtualFlow<TableRow<S>> flow;
-    
+
     /***************************************************************************
      * * CONSTRUCTOR * *
      **************************************************************************/
 
     /**
-     * 
+     *
      * @param tableView the {@link TableView2}
      */
     public TableView2Skin(TableView2<S> tableView) {
         super(tableView);
-        
+
         this.flow = getVirtualFlow();
         flow.setCellFactory(p -> createCell());
         this.tableView = tableView;
-        
+
         if (tableView.getParent() != null && tableView.getParent() instanceof RowHeader) {
             parentTableView = ((RowHeader) tableView.getParent()).getParentTableView();
         } else {
             parentTableView = null;
         }
 
-        //Bind the row factory, useful to handle the row freezing and row height. 
-        // It prevents from setting a different row factory, unless developer  
-        // chooses to unbind it and provide on his own risk a different row 
+        //Bind the row factory, useful to handle the row freezing and row height.
+        // It prevents from setting a different row factory, unless developer
+        // chooses to unbind it and provide on his own risk a different row
         // factory that may or may not work with TableView2 and row freezing.
         tableView.rowFactoryProperty().bind(Bindings.createObjectBinding(
                 () -> param -> new TableRow2(tableView), tableView.skinProperty()));
@@ -225,7 +225,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         this.tableView.getFixedColumns().addListener(fixedColumnsListener);
 
         init();
-        
+
         hBarValue = new BitSet(getItemCount());
         rowToLayout = initRowToLayoutBitSet();
         tableView.rowFixingEnabledProperty().addListener((Observable o) -> {
@@ -234,16 +234,16 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         });
         // Because fixedRow Listener is not reacting first time.
         computeFixedRowHeight();
-        
-        
+
+
         EventHandler<MouseEvent> ml = (MouseEvent event) -> {
             // JDK-8114594: cancel editing on scroll. This is a bit extreme
             // (we are cancelling editing on touching the scrollbars).
             // This can be improved at a later date.
             if (tableView.getEditingCell() != null) {
-                tableView.edit(-1, null); 
+                tableView.edit(-1, null);
             }
-            
+
             // This ensures that the table maintains the focus, even when the vbar
             // and hbar controls inside the flow are clicked. Without this, the
             // focus border will not be shown when the user interacts with the
@@ -251,7 +251,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
             // available to the user.
             tableView.requestFocus();
         };
-        
+
         getFlow().getVerticalBar().addEventFilter(MouseEvent.MOUSE_PRESSED, ml);
         getFlow().getHorizontalBar().addEventFilter(MouseEvent.MOUSE_PRESSED, ml);
 
@@ -268,13 +268,13 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     }
 
     /**
-     * Compute the height of a particular row. 
-     * 
+     * Compute the height of a particular row.
+     *
      * If {@link TableView#getFixedCellSize() } is set, all the rows will take
      * this fixed size.
-     * 
+     *
      * Else if there is no value set, {@link #DEFAULT_CELL_HEIGHT} is returned.
-     * 
+     *
      * Else, the value is returned from the map that {@link TableRow2Skin} manages
      * to set based on the row requirements.
      *
@@ -285,9 +285,12 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         if (tableView.getFixedCellSize() > 0) {
             return tableView.getFixedCellSize();
         }
-        
+
         if (row < 0 || row >= getItemCount() || rowHeightMap.get(row) == null) {
-            return DEFAULT_CELL_HEIGHT;
+            if(rowHeightMap == null || rowHeightMap.isEmpty() || rowHeightMap.get(0) == null) {
+                return DEFAULT_CELL_HEIGHT;
+            }
+            return rowHeightMap.get(0);
         }
         return rowHeightMap.get(row);
     }
@@ -330,7 +333,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         }
         return null;
     }
-    
+
     /**
      * This return the first index displaying a cell in case of a rowSpan. If
      * the returned index is the same as given, it means the current cell is the
@@ -345,11 +348,11 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         // TODO: Find the first index in a rowSpan
         return index;
     }
-    
+
     /**
      * This return the row at the specified index in the list. The index
      * specified HAS NOTHING to do with the index of the row.
-     * 
+     *
      * @see #getRowIndexed(int) for a getting a row with its real index.
      * @param index the number of row
      * @return the {@link TableView2}
@@ -364,7 +367,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     /**
      * Indicates whether or not the row at the specified index is currently being
      * displayed.
-     * 
+     *
      * @param index the index
      * @return whether or not the row at the specified index is currently being
      * displayed
@@ -378,7 +381,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         for (Object obj : getFlow().getCells()) {
             if (((TableRow2) obj).getIndex() == index && !((TableRow2) obj).getChildrenUnmodifiable().isEmpty())
                 return true;
-            }
+        }
         return false;
     }
 
@@ -512,17 +515,17 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
             rowHeader = new RowHeader<>(tableView);
             getChildren().add(rowHeader);
             rowHeader.init(this, (TableHeaderRow2) getTableHeaderRow());
-        }        
-        
+        }
+
         getFlow().getVerticalBar().valueProperty().addListener(vbarValueListener);
         ((TableHeaderRow2) getTableHeaderRow()).init();
         getFlow().init();
-        
+
         if (parentTableView != null) {
             // Don't add listeners to inner table
             return;
         }
-        
+
         tableView.addEventHandler(KeyEvent.KEY_PRESSED, new WeakEventHandler<>(keyPressedEventHandler));
         tableView.addEventFilter(MouseEvent.MOUSE_PRESSED, new WeakEventHandler<>(mousePressedEventHandler));
 
@@ -547,7 +550,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
 
         /*
          * Column Header Drag
-         */ 
+         */
         // Adjust column overlay based on headers offset
         getChildren().stream()
                 .filter(n -> n.getStyleClass().contains("column-overlay"))
@@ -555,7 +558,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
                 .ifPresent(n -> {
                     n.translateXProperty().bind(rowHeader.rowHeaderWidthProperty());
                 });
-        
+
         // Adjust line based in rowHeader offset
         final Region columnReorderLine = (Region) getChildren().get(3); // getColumnReorderLine();
         columnReorderLine.translateXProperty().addListener((obs, ov, nv) -> {
@@ -565,9 +568,9 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
                 columnReorderLine.getTransforms().setAll(new Translate(getRowHeaderOffset(), 0));
             }
         });
-        columnReorderLine.boundsInParentProperty().addListener((obs, ov, nv) -> 
-            columnReorderLine.setOpacity(nv.getMaxX() > tableView.getWidth() ? 0 : 1));
-        
+        columnReorderLine.boundsInParentProperty().addListener((obs, ov, nv) ->
+                columnReorderLine.setOpacity(nv.getMaxX() > tableView.getWidth() ? 0 : 1));
+
         // Adjust corner region based in rowHeader offset
         getTableHeaderRow().getChildren().stream()
                 .filter(n -> n.getStyleClass().contains("show-hide-columns-button"))
@@ -592,24 +595,24 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
      */
     private final IntegerProperty size = new SimpleIntegerProperty();
     public final IntegerProperty sizeProperty() { return size; }
-    
+
     /** {@inheritDoc} */
     @Override protected void layoutChildren(double x, double y, double w, final double h) {
         if (tableView == null) {
             return;
         }
         size.set(getItemCount());
-        
+
         double width = w;
         double height = h;
-        
+
         double rowHeaderWidth = getRowHeaderOffset();
-        
+
         if (tableView.isRowHeaderVisible()) {
             x += rowHeaderWidth;
             width -= rowHeaderWidth;
         }
-        
+
         super.layoutChildren(x, y, width, height);
 
         final double baselineOffset = getSkinnable().getLayoutBounds().getHeight() / 2;
@@ -619,7 +622,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
             // position the table header
             tableHeaderRowHeight = tableHeaderRow.prefHeight(-1);
             layoutInArea(getTableHeaderRow(), x, y, width, tableHeaderRowHeight, baselineOffset, HPos.CENTER, VPos.CENTER);
-            
+
             y += tableHeaderRowHeight;
         }
 
@@ -635,13 +638,13 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         }
         return tableHeaderRow.isVisible();
     }
-    
-    
+
+
     protected int getViewColumn(int modelColumn) {
-       return (int) tableView.getColumns().stream()
-               .limit(modelColumn > - 1 ? modelColumn : 0)
-               .filter(TableColumn::isVisible)
-               .count();
+        return (int) tableView.getColumns().stream()
+                .limit(modelColumn > - 1 ? modelColumn : 0)
+                .filter(TableColumn::isVisible)
+                .count();
     }
 
     /** {@inheritDoc} */
@@ -657,7 +660,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     private int getFixedRowSize() {
         return tableView.getFixedRows().size();
     }
-    
+
     void focusScroll() {
         final TableFocusModel<?, ?> fm = tableView.getFocusModel();
         if (fm == null) {
@@ -707,22 +710,22 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     protected TableHeaderRow createTableHeaderRow() {
         return new TableHeaderRow2(this);
     }
-    
+
     protected TableHeaderRow2 getTableHeaderRow2(){
         return (TableHeaderRow2) getTableHeaderRow();
     }
-    
+
     private double getRowHeaderOffset() {
         if (rowHeader != null) {
             return rowHeader.computeHeaderWidth();
         }
         return 0d;
     }
-    
+
     protected SouthTableHeaderRow getSouthHeader() {
         return getTableHeaderRow2().getSouthHeaderRow();
     }
-    
+
     BooleanProperty getTableMenuButtonVisibleProperty() {
         return tableView.tableMenuButtonVisibleProperty();
     }
@@ -731,7 +734,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     @Override public void scrollHorizontally(){
         super.scrollHorizontally();
     }
-    
+
     /** {@inheritDoc} */
     @Override protected void scrollHorizontally(TableColumn<S, ?> col) {
         if (col == null || !col.isVisible()) {
@@ -747,7 +750,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
          * layout of the rows hasn't been done yet and the value is not right.
          * So we might end up below a fixedColumns.
          */
-        
+
         fixedColumnWidth = 0;
         final double pos = getFlow().getHorizontalBar().getValue();
         int index = tableView.getVisibleLeafColumns().indexOf(col);
@@ -771,7 +774,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         final double end = start + col.getWidth();
 
         // determine the visible width of the table
-        final double headerWidth = tableView.getWidth() - snappedLeftInset() - snappedRightInset() - 
+        final double headerWidth = tableView.getWidth() - snappedLeftInset() - snappedRightInset() -
                 (rowHeader != null ? rowHeader.getRowHeaderWidth() : 0d);
 
         // determine by how much we need to translate the table to ensure that
@@ -788,7 +791,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         if (start < pos + fixedColumnWidth && start >= 0 && start >= fixedColumnWidth) {
             newPos = start - fixedColumnWidth < 0 ? start : start - fixedColumnWidth;
             getFlow().getHorizontalBar().setValue(newPos);
-        //If the starting point is not visible on the right.    
+            //If the starting point is not visible on the right.
         } else if (start > pos + headerWidth) {
             final double delta = start < 0 || end > headerWidth ? start - pos - fixedColumnWidth : 0;
             newPos = Math.min(pos + delta, max);
@@ -820,7 +823,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
     /**
      * Return a BitSet of the rows that needs layout all the time. This
      * includes any row containing a span, or a fixed row.
-     * @return 
+     * @return
      */
     private BitSet initRowToLayoutBitSet() {
         int rowCount = getItemCount();
@@ -915,7 +918,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         cell.updateTableView(getSkinnable());
         return cell;
     }
-    
+
     /** {@inheritDoc} */
     @Override public final int getItemCount() {
         return getSkinnable().getItems() == null ? 0 : getSkinnable().getItems().size();
@@ -944,7 +947,7 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
         }
         getHBar().setValue(value);
     }
-    
+
     private void updateHeaders() {
         final ObservableList<TablePosition> selectedCells = tableView.getSelectionModel().getSelectedCells();
         final List<Integer> columns = selectedCells.stream()
@@ -965,12 +968,12 @@ public class TableView2Skin<S> extends TableViewSkinBase<S,S, TableView<S>, Tabl
             getSelectedRows().setAll(rows);
         }
     }
-    
+
     /**
      * We try to make visible the rows that may be hidden by Fixed rows.
      *
      * @param newIndex
-     * @param oldIndex 
+     * @param oldIndex
      */
     private void scrollToVisibleCell(Number newIndex, Number oldIndex) {
         if (key && newIndex != null && oldIndex != null) {
